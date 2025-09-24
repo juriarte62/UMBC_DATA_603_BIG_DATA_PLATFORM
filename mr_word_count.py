@@ -1,3 +1,5 @@
+# Johnny Uriarte date of birth = 05/27/1996
+
 from mrjob.job import MRJob
 import re
 
