@@ -16,7 +16,7 @@ os.environ['HADOOP_HOME'] = r'C:\hadoop'
 os.environ['PATH'] += r';C:\hadoop\bin'
 
 # ============================================================
-# 1️⃣ Initialize Spark Session & Schema
+# (1) Initialize Spark Session & Schema
 # ============================================================
 spark = SparkSession.builder.appName('ISS_Live_Tracker_Fixed').getOrCreate()
 spark.sparkContext.setLogLevel('ERROR')
@@ -31,7 +31,7 @@ schema = StructType([
 ])
 
 # ============================================================
-# 2️⃣ Stream from socket
+# (2) Stream from socket
 # ============================================================
 df_raw = (
     spark.readStream.format('socket')
@@ -56,7 +56,7 @@ query = (
 )
 
 # ============================================================
-# 3️⃣ Live Map Visualization Loop
+# (3) Live Map Visualization Loop
 # ============================================================
 trail = []
 map_path = 'iss_live_map.html'
@@ -75,7 +75,7 @@ while time.time() - start_time < DURATION:
             lat, lon = data[0]['latitude'], data[0]['longitude']
             if (lat, lon) not in trail:
                 trail.append((lat, lon))
-                if len(trail) > 720:  # ~1 hr of 5 sec samples
+                if len(trail) > 720:  # ~1 hr of 5 sec samples --> (60 sec/min * 60 min/hr) / (5 sec/increment)
                     trail.pop(0)
 
             # Create the live map
@@ -83,7 +83,7 @@ while time.time() - start_time < DURATION:
             folium.PolyLine(trail, color='red', weight=2.5, opacity=0.8).add_to(m)
             folium.Marker(
                 [lat, lon],
-                popup=f'🛰️ ISS\nLat: {lat:.2f}, Lon: {lon:.2f}',
+                popup=f'ISS\nLat: {lat:.2f}, Lon: {lon:.2f}',
                 icon=folium.Icon(color='blue', icon='rocket')
             ).add_to(m)
 
