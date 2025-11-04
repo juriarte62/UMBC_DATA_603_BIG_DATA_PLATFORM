@@ -1,23 +1,53 @@
-# ============================================================
-# ISS LIVE VISUALIZER (Resilient Consumer) — Spark + Folium
-# ============================================================
+### Notice ### 
+# This is the consumer part of the streaming process
+## 1) producer --> 2) consumer 
+# run this after you run iss_socket_server.py
 
-import os
-import time
-import folium
-import webbrowser
+# -------------------------Package stuff -------------------------
+# the graph package
+import folium 
+
+# PySpark --> Apache Spark (Streaming)
 from pyspark.sql import SparkSession
 from pyspark.sql.functions import from_json, col
-from pyspark.sql.types import StructType, StructField, StringType, DoubleType, LongType
+from pyspark.sql.types import StructType, StructField, StringType
 
-# Spark & Hadoop environment variables -- I had to remove all the stuff from the old assignemnt. It didn't work, but I was able to get the JAVA working for our group project
+# OS set-up for correction version of JAVA and HDFS
+## The tutorial's version is outdate, had to manually update to keep up with current spark
+import sys
+sys.stdout.reconfigure(encoding='utf-8') # to avoid unicode encoding errors --pray it works (Johnny boy)
+import os
+# os.environ['JAVA_HOME'] = r'C:\Program Files\Eclipse Adoptium\jdk-17' # have to manually change my java home path
+# os.environ['JAVA_HOME'] = r'/c/Program Files/Eclipse Adoptium/jdk-17.0.17.10-hotspot' # have to manually change my java home path
 os.environ['JAVA_HOME'] = r'C:\Program Files\Eclipse Adoptium\jdk-17.0.17.10-hotspot'
+# I had to mess around with my original hadoop settings -JU
 os.environ['HADOOP_HOME'] = r'C:\hadoop'
+# Read message future johnny about why we have to use ; instead of : in path
+## for whatever reason, some big brain at microsoft that you should put a ; in front of the C: directory
+## which makes total sense, and by that I mean it makes no sense at all!
+## The stackoverflow says this work and I'm sticking to it
 os.environ['PATH'] += r';C:\hadoop\bin'
 
-# ============================================================
+# Socket for producer set up in apache spark streaming
+## set up for the consumer part later
+import socket
+
+# NASA API set up
+import json # grab file
+import requests # HTML json link stuff
+
+
+# datetime for 5 sec increment and let run for 1 hour
+import time 
+from datetime import datetime, timedelta
+
+# This is what I like to call the nagging package
+## It tells me what I'm doing wrong and gives me 
+## just enough clues so I can google the errors and eventually get this stupid script working
+import traceback 
+
+
 # (1) Initialize Spark Session & Schema
-# ============================================================
 spark = SparkSession.builder.appName('ISS_Live_Tracker_Fixed').getOrCreate()
 spark.sparkContext.setLogLevel('ERROR')
 
@@ -30,9 +60,8 @@ schema = StructType([
     StructField('message', StringType())
 ])
 
-# ============================================================
 # (2) Stream from socket
-# ============================================================
+## This reads in the raw data from the producer (socket info)
 df_raw = (
     spark.readStream.format('socket')
     .option('host', 'localhost')
@@ -55,12 +84,12 @@ query = (
     .start()
 )
 
-# ============================================================
 # (3) Live Map Visualization Loop
-# ============================================================
+## This creates the .html file of the go-live visuals 
 trail = []
 map_path = 'iss_live_map.html'
 
+# sanity check, to make sure it's working 
 print('[INFO] Starting ISS live map visualization...')
 print('[INFO] Refresh interval: 5 seconds | Duration: 1 hour')
 print('[INFO] Press Ctrl+C to stop early')
@@ -68,6 +97,8 @@ print('[INFO] Press Ctrl+C to stop early')
 start_time = time.time()
 DURATION = 3600  # 1 hour
 
+# Spark SQL reference 
+# https://spark.apache.org/sql/
 while time.time() - start_time < DURATION:
     try:
         data = spark.sql('SELECT * FROM iss_stream ORDER BY timestamp DESC LIMIT 1').collect()

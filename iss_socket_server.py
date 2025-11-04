@@ -1,3 +1,8 @@
+### Notice ### 
+# This is the producer part of the streaming process
+## 1) producer --> 2) consumer 
+# run this first in the terminal then run iss_spark_visualizer.py to get the graph working
+
 # -------------------------Package stuff -------------------------
 # the graph package
 import folium 
@@ -17,6 +22,10 @@ import os
 os.environ['JAVA_HOME'] = r'C:\Program Files\Eclipse Adoptium\jdk-17.0.17.10-hotspot'
 # I had to mess around with my original hadoop settings -JU
 os.environ['HADOOP_HOME'] = r'C:\hadoop'
+# Read message future johnny about why we have to use ; instead of : in path
+## for whatever reason, some big brain at microsoft that you should put a ; in front of the C: directory
+## which makes total sense, and by that I mean it makes no sense at all!
+## The stackoverflow says this work and I'm sticking to it
 os.environ['PATH'] += r';C:\hadoop\bin'
 
 # Socket for producer set up in apache spark streaming
@@ -78,7 +87,7 @@ def start_iss_server():
     while datetime.now() < end_time:
         try:
             response = session.get(ISS_API, timeout=10)
-            if response.status_code == 200:
+            if response.status_code == 200: # 200 means success
                 data = response.json()
                 msg = json.dumps(data) + '\n'
                 conn.sendall(msg.encode('utf-8'))
